@@ -76,10 +76,10 @@ st.markdown("""
 def load_data():
     import os
 
-BASE_DIR = os.path.dirname(__file__)
-file_path = os.path.join(BASE_DIR, "main_data.csv")
+    BASE_DIR = os.path.dirname(__file__)
+    file_path = os.path.join(BASE_DIR, "main_data.csv")
 
-df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path)
 
     # tanggal aman
     df["dteday"] = pd.to_datetime(df["dteday"], errors="coerce")
