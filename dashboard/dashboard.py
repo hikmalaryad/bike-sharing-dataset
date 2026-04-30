@@ -7,7 +7,7 @@ import scipy.stats as stats
 sns.set(style="whitegrid")
 
 st.set_page_config(
-    page_title="Bike Sharing Dashboard",
+   page_title="Dashboard Analisis Penyewaan Sepeda (2011–2012)",
     page_icon="🚲",
     layout="wide"
 )
@@ -75,10 +75,39 @@ st.markdown("""
 @st.cache_data
 def load_data():
     df = pd.read_csv("dashboard/main_data.csv")
-    df["dteday"] = pd.to_datetime(df["dteday"])
+
+    # tanggal aman
+    df["dteday"] = pd.to_datetime(df["dteday"], errors="coerce")
+
+    # drop tanggal rusak
+    df = df.dropna(subset=["dteday"])
+
+    # fitur waktu
     df["year"] = df["dteday"].dt.year
     df["month"] = df["dteday"].dt.month
 
+    # ================= FIX SEASON =================
+    if df["season"].dtype != "object":
+        df["season"] = df["season"].map({
+            1: "Spring",
+            2: "Summer",
+            3: "Fall",
+            4: "Winter"
+        })
+
+    # ================= FIX WORKINGDAY =================
+    if df["workingday"].dtype != "object":
+        df["workingday_label"] = df["workingday"].map({
+            0: "Holiday",
+            1: "Working Day"
+        })
+    else:
+        df["workingday_label"] = df["workingday"]
+
+    # ================= DROP NULL =================
+    df = df.dropna(subset=["season", "workingday_label"])
+
+    # ================= TEMP CATEGORY =================
     df["temp_category"] = pd.cut(
         df["temp"],
         bins=[0, 0.33, 0.66, 1.0],
@@ -89,31 +118,64 @@ def load_data():
 
 df = load_data()
 
+# ================= FIX FILTER WAJIB =================
+
+# buang data yang gagal mapping
+df = df.dropna(subset=["season", "workingday_label"])
+
+# ================= CLEAN DATA =================
+
+# convert tanggal aman
+df["dteday"] = pd.to_datetime(df["dteday"], errors="coerce")
+
+# buang tanggal rusak
+df = df.dropna(subset=["dteday"])
+
 # ================= FILTER =================
 st.sidebar.markdown("## 📊 Filter Data")
 
+# Tahun (WAJIB ADA)
 selected_year = st.sidebar.multiselect(
-    "Tahun",
-    sorted(df["year"].unique()),
-    default=sorted(df["year"].unique())
+    "Pilih Tahun",
+    options=sorted(df["year"].dropna().unique()),
+    default=sorted(df["year"].dropna().unique())
 )
 
+# Musim
 selected_season = st.sidebar.multiselect(
-    "Musim",
-    ["Spring", "Summer", "Fall", "Winter"],
-    default=["Spring", "Summer", "Fall", "Winter"]
+    "Pilih Musim",
+    options=[x for x in sorted(df["season"].unique()) if pd.notna(x)],
+    default=[x for x in sorted(df["season"].unique()) if pd.notna(x)]
 )
+
+# Hari
+selected_workingday = st.sidebar.multiselect(
+    "Pilih Tipe Hari",
+    options=[x for x in sorted(df["workingday_label"].unique()) if pd.notna(x)],
+    default=[x for x in sorted(df["workingday_label"].unique()) if pd.notna(x)]
+)
+
+# ================= DATE =================
+if df.empty:
+    st.error("Data kosong setelah cleaning")
+    st.stop()
+
+min_date = df["dteday"].min()
+max_date = df["dteday"].max()
 
 date_range = st.sidebar.date_input(
-    "Rentang waktu",
-    [df["dteday"].min(), df["dteday"].max()]
+    "Pilih Rentang Tanggal",
+    value=(min_date.date(), max_date.date())
 )
 
+# ================= APPLY FILTER =================
 df_filtered = df[
     (df["year"].isin(selected_year)) &
-    (df["season"].isin(selected_season))
+    (df["season"].isin(selected_season)) &
+    (df["workingday_label"].isin(selected_workingday))
 ]
 
+# Filter tanggal
 if len(date_range) == 2:
     start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
     df_filtered = df_filtered[
@@ -121,6 +183,7 @@ if len(date_range) == 2:
         (df_filtered["dteday"] <= end)
     ]
 
+# ================= INFO SIDEBAR =================
 st.sidebar.info("""
 Dashboard ini menganalisis penyewaan sepeda
 
@@ -134,6 +197,14 @@ Fokus:
 Insight utama: suhu paling berpengaruh terhadap permintaan.
 """)
 
+# ================= VALIDASI DATA =================
+if df_filtered.empty:
+    st.warning("Filter terlalu sempit, menampilkan semua data.")
+    df_filtered = df.copy()
+
+# ================= INFO JUMLAH DATA =================
+st.caption(f"Jumlah data ditampilkan: {len(df_filtered)} baris")
+
 # ================= HEADER =================
 st.title("🚲 Dashboard Bike Sharing")
 st.markdown("Analisis faktor yang memengaruhi penyewaan sepeda (2011–2012).")
@@ -143,10 +214,30 @@ st.success("Insight utama: suhu merupakan faktor paling dominan dalam meningkatk
 # ================= METRICS =================
 col1, col2, col3, col4 = st.columns(4)
 
-col1.markdown(f'<div class="card"><h5>Rata-rata</h5><h2>{int(df_filtered["cnt"].mean()):,}</h2></div>', unsafe_allow_html=True)
-col2.markdown(f'<div class="card"><h5>Median</h5><h2>{int(df_filtered["cnt"].median()):,}</h2></div>', unsafe_allow_html=True)
-col3.markdown(f'<div class="card"><h5>Maksimum</h5><h2>{df_filtered["cnt"].max():,}</h2></div>', unsafe_allow_html=True)
-col4.markdown(f'<div class="card"><h5>Jumlah Data</h5><h2>{len(df_filtered)}</h2></div>', unsafe_allow_html=True)
+mean_val = df_filtered["cnt"].mean()
+median_val = df_filtered["cnt"].median()
+max_val = df_filtered["cnt"].max()
+count_val = len(df_filtered)
+
+col1.markdown(
+    f'<div class="card"><h5>Rata-rata</h5><h2>{int(mean_val) if pd.notna(mean_val) else 0:,}</h2></div>',
+    unsafe_allow_html=True
+)
+
+col2.markdown(
+    f'<div class="card"><h5>Median</h5><h2>{int(median_val) if pd.notna(median_val) else 0:,}</h2></div>',
+    unsafe_allow_html=True
+)
+
+col3.markdown(
+    f'<div class="card"><h5>Maksimum</h5><h2>{int(max_val) if pd.notna(max_val) else 0:,}</h2></div>',
+    unsafe_allow_html=True
+)
+
+col4.markdown(
+    f'<div class="card"><h5>Jumlah Data</h5><h2>{count_val}</h2></div>',
+    unsafe_allow_html=True
+)
 
 st.markdown("""
 Secara umum, penyewaan sepeda berada pada level stabil dengan rata-rata sekitar **4.500 unit/hari**.  
@@ -156,196 +247,209 @@ Namun, terdapat lonjakan pada kondisi tertentu yang menunjukkan bahwa permintaan
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
 # =====================================================
-# 1. SUHU
+# 1. SUHU + KELEMBABAN
 # =====================================================
-st.subheader("1. Hubungan Suhu dengan Jumlah Penyewaan Sepeda")
+st.markdown("## 🎯 Pertanyaan 1: Pengaruh Suhu & Kelembaban")
 
-fig, ax = plt.subplots(figsize=(6,4))
-sns.regplot(x="temp", y="cnt", data=df_filtered, ax=ax)
-plt.tight_layout()
-st.pyplot(fig)
+col1, col2 = st.columns(2)
+
+with col1:
+    fig, ax = plt.subplots()
+    sns.regplot(x="temp", y="cnt", data=df_filtered, ax=ax)
+    st.pyplot(fig)
+
+with col2:
+    fig, ax = plt.subplots()
+    sns.regplot(x="hum", y="cnt", data=df_filtered, ax=ax)
+    st.pyplot(fig)
 
 st.markdown("""
 <div class="insight-box">
 <b>Insight:</b><br><br>
 
-<b>Suhu (temperature)</b> memiliki pengaruh paling dominan terhadap jumlah penyewaan sepeda.  
-Semakin tinggi suhu, jumlah penyewaan meningkat secara konsisten, menunjukkan hubungan positif yang kuat.<br><br> 
-Meskipun terdapat variasi pada beberapa titik data, pola umum tetap stabil dan jelas, 
-sehingga suhu dapat dianggap sebagai faktor utama yang mendorong aktivitas bersepeda.<br><br>
-Hal ini menunjukkan bahwa <b>suhu dapat digunakan sebagai indikator utama dalam memprediksi permintaan</b>, 
-serta sebagai dasar dalam pengambilan keputusan operasional seperti penambahan unit sepeda saat cuaca hangat.
+Suhu (temp) menunjukkan korelasi positif moderat terhadap jumlah penyewaan (r≈0.63), 
+menjadikannya faktor utama (key driver) peningkatan demand. Sebaliknya, kelembaban (hum) 
+memiliki korelasi negatif sangat lemah (r≈-0.10), sehingga pengaruhnya tidak signifikan. 
+Artinya, peningkatan suhu secara konsisten mendorong penyewaan, sementara kelembaban 
+bukan faktor penentu utama.
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
 # =====================================================
-# 2. KELEMBABAN
+# 2. TREND
 # =====================================================
-st.subheader("2. Pengaruh Kelembaban terhadap Penyewaan Sepeda")
+st.markdown("## 🎯 Pertanyaan 2: Tren Penyewaan Sepeda")
 
-fig, ax = plt.subplots(figsize=(6,4))
-sns.regplot(x="hum", y="cnt", data=df_filtered, ax=ax)
-plt.tight_layout()
-st.pyplot(fig)
+monthly = df_filtered.set_index("dteday").resample("ME")["cnt"].mean()
+
+if monthly.empty:
+    st.info("Data tidak cukup untuk menampilkan tren")
+else:
+    fig, ax = plt.subplots(figsize=(8,4))
+    monthly.plot(ax=ax)
+    st.pyplot(fig)
 
 st.markdown("""
 <div class="insight-box">
 <b>Insight:</b><br><br>
 
-<b>Kelembaban (humidity)</b> menunjukkan hubungan negatif terhadap jumlah penyewaan, 
-namun dengan kekuatan yang relatif lemah.<br><br>
-Peningkatan kelembaban cenderung diikuti dengan penurunan jumlah penyewaan, 
-tetapi pola ini tidak konsisten di seluruh data.<br><br>
-Hal ini mengindikasikan bahwa <b>kelembaban bukan faktor utama dalam menentukan permintaan</b>, 
-melainkan hanya sebagai faktor pendukung yang memiliki pengaruh terbatas dibandingkan suhu.
+Tren penyewaan menunjukkan pola musiman yang konsisten, dengan peak terjadi pada 
+pertengahan tahun (≈Jun–Sep) dan penurunan di awal serta akhir tahun. Selain itu, 
+terlihat adanya peningkatan level penyewaan pada tahun 2012 dibanding 2011, 
+mengindikasikan growth demand secara keseluruhan.
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
 # =====================================================
-# 3. TREND WAKTU
+# 3. WORKINGDAY + SEASON
 # =====================================================
-st.subheader("3. Tren Penyewaan Sepeda Berdasarkan Waktu")
+st.markdown("## 🎯 Pertanyaan 3: Perbandingan Hari & Musim")
 
-monthly = df_filtered.set_index("dteday").resample("ME")["cnt"].sum()
+col1, col2 = st.columns(2)
 
-fig, ax = plt.subplots(figsize=(6,4))
-monthly.plot(ax=ax)
-plt.tight_layout()
-st.pyplot(fig)
+with col1:
+    fig, ax = plt.subplots()
+    sns.barplot(x="workingday_label", y="cnt", data=df_filtered, ax=ax)
+    ax.set_xlabel("Jenis Hari")
+    ax.set_ylabel("Jumlah Penyewaan")
+    ax.set_title("Perbandingan Penyewaan: Hari Kerja vs Libur")
+    st.pyplot(fig)
+
+with col2:
+    fig, ax = plt.subplots()
+    sns.barplot(x="season", y="cnt", data=df_filtered, ax=ax)
+    st.pyplot(fig)
 
 st.markdown("""
 <div class="insight-box">
 <b>Insight:</b><br><br>
 
-Penyewaan sepeda menunjukkan <b>pola musiman (seasonality) yang jelas</b>, 
-dengan peningkatan bertahap dari awal tahun hingga mencapai puncak di pertengahan tahun, 
-kemudian menurun kembali di akhir tahun.<br><br>
-Selain itu, terdapat <b>tren peningkatan jumlah penyewaan dari tahun 2011 ke 2012</b>, 
-yang menunjukkan adanya pertumbuhan penggunaan layanan sepeda dari waktu ke waktu.<br><br>
-Pola ini mengindikasikan bahwa <b>permintaan dipengaruhi oleh faktor waktu dan musim</b>, 
-sehingga penting untuk menyesuaikan strategi operasional berdasarkan periode tertentu.
+Perbedaan penyewaan antara hari kerja dan hari libur relatif kecil, sehingga 
+tipe hari bukan faktor utama dalam menentukan demand. Sebaliknya, musim memiliki 
+pengaruh yang lebih signifikan, dengan peak terjadi pada Fall dan Summer serta 
+terendah pada Spring, menunjukkan adanya efek seasonality yang kuat.
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
 # =====================================================
-# 4. WORKINGDAY
+# ANALISIS LANJUTAN
 # =====================================================
-st.subheader("4. Perbandingan Penyewaan Berdasarkan Hari Kerja dan Hari Libur")
-
-fig, ax = plt.subplots(figsize=(6,4))
-sns.barplot(x="workingday", y="cnt", data=df_filtered, ax=ax)
-plt.tight_layout()
-st.pyplot(fig)
-
-st.markdown("""
-<div class="insight-box">
-<b>Insight:</b><br><br>
-
-Perbedaan jumlah penyewaan antara <b>hari kerja</b> dan <b>hari libur</b> tidak signifikan.  
-Rata-rata penyewaan pada kedua kategori berada pada level yang hampir sama.<br><br>
-Hal ini menunjukkan bahwa sepeda digunakan baik untuk keperluan rutin seperti bekerja 
-maupun untuk aktivitas rekreasi.<br><br>
-Dengan demikian, <b>permintaan cenderung stabil sepanjang minggu</b>, 
-dan tidak terlalu dipengaruhi oleh jenis hari.
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
-
-# =====================================================
-# 5. SEASON
-# =====================================================
-st.subheader("5. Perbandingan Penyewaan Berdasarkan Musim")
-
-fig, ax = plt.subplots(figsize=(6,4))
-sns.barplot(x="season", y="cnt", data=df_filtered, ax=ax)
-plt.tight_layout()
-st.pyplot(fig)
-
-st.markdown("""
-<div class="insight-box">
-<b>Insight:</b><br><br>
-
-Musim memiliki pengaruh yang cukup signifikan terhadap jumlah penyewaan sepeda.  
-<b>Fall</b> menunjukkan tingkat penyewaan tertinggi, diikuti oleh Summer dan Winter, 
-sedangkan <b>Spring</b> memiliki nilai terendah.<br><br>
-Hal ini menunjukkan bahwa <b>kondisi lingkungan dan kenyamanan pada musim tertentu</b> 
-berperan penting dalam meningkatkan atau menurunkan minat masyarakat untuk bersepeda.<br><br>
-Dengan demikian, <b>pola musiman dapat dimanfaatkan untuk mengoptimalkan strategi operasional</b> 
-dan perencanaan ketersediaan sepeda.
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
-
-# =====================================================
-# ANALISIS LANJUTAN (TETAP)
-# =====================================================
-st.subheader("6. Analisis Lanjutan")
+st.subheader("Analisis Lanjutan")
 
 tab1, tab2, tab3 = st.tabs(["Tren Tahunan", "Kategori Suhu", "Uji Statistik"])
 
+# ======================
+# TAB 1: TREND TAHUNAN
+# ======================
 with tab1:
-    monthly_year = df_filtered.groupby(["year", "month"])["cnt"].sum().reset_index()
+    monthly_year = df_filtered.groupby(["year", "month"])["cnt"].mean().reset_index()
 
     fig, ax = plt.subplots()
     for year, group in monthly_year.groupby("year"):
         ax.plot(group["month"], group["cnt"], marker="o", label=str(year))
     ax.legend()
+    ax.set_title("Perbandingan Tren Bulanan per Tahun")
     st.pyplot(fig)
 
-    st.info("Tahun 2012 menunjukkan peningkatan penyewaan dibandingkan 2011.")
+    st.markdown("""
+<div class="insight-box">
+<b>Insight:</b><br><br>
 
+Tahun 2012 menunjukkan rata-rata penyewaan yang lebih tinggi dibandingkan 2011, 
+mengindikasikan adanya <b>growth demand</b> dari waktu ke waktu. Pola musiman tetap 
+konsisten di kedua tahun, dengan peak terjadi pada pertengahan tahun, yang 
+menunjukkan adanya <b>seasonality yang stabil</b>.
+</div>
+""", unsafe_allow_html=True)
+
+# ======================
+# TAB 2: KATEGORI SUHU
+# ======================
 with tab2:
     fig, ax = plt.subplots()
     sns.barplot(x="temp_category", y="cnt", data=df_filtered, ax=ax)
+    ax.set_title("Rata-rata Penyewaan berdasarkan Kategori Suhu")
     st.pyplot(fig)
 
-    st.info("Kategori suhu memperjelas hubungan suhu dengan penyewaan.")
+    st.markdown("""
+<div class="insight-box">
+<b>Insight:</b><br><br>
 
+Rata-rata penyewaan meningkat seiring kenaikan kategori suhu, dengan kategori 
+<b>Panas</b> sebagai yang tertinggi dan <b>Dingin</b> terendah. Hal ini mengonfirmasi 
+bahwa suhu merupakan <b>key driver</b> dalam meningkatkan demand penyewaan sepeda.
+</div>
+""", unsafe_allow_html=True)
+
+# ======================
+# TAB 3: UJI STATISTIK
+# ======================
 with tab3:
-    working = df_filtered[df_filtered["workingday"] == "Working Day"]["cnt"]
-    holiday = df_filtered[df_filtered["workingday"] == "Holiday"]["cnt"]
+    working = df_filtered[df_filtered["workingday_label"] == "Working Day"]["cnt"]
+    holiday = df_filtered[df_filtered["workingday_label"] == "Holiday"]["cnt"]
 
     t_stat, p_value = stats.ttest_ind(working, holiday, equal_var=False)
 
     st.metric("P-value", f"{p_value:.4f}")
 
+    # FIX LOGIC (NO ERROR)
     if p_value < 0.05:
-        st.success("Signifikan")
+        hasil_uji = "<b>Terdapat perbedaan signifikan</b> antara hari kerja dan hari libur (p &lt; 0.05)."
     else:
-        st.info("Tidak signifikan")
+        hasil_uji = "<b>Tidak terdapat perbedaan signifikan</b> antara hari kerja dan hari libur (p ≥ 0.05)."
+
+    st.markdown(f"""
+    <div class="insight-box">
+    <b>Insight:</b><br><br>
+
+    {hasil_uji}<br><br>
+
+    Hal ini menunjukkan bahwa tipe hari bukan faktor utama dalam menentukan tingkat penyewaan. 
+    Permintaan cenderung stabil sepanjang minggu dibandingkan faktor lain seperti cuaca atau musim.
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
 # =====================================================
 # KESIMPULAN
 # =====================================================
-st.subheader("7. Kesimpulan")
+st.subheader("Kesimpulan")
 
 st.markdown("""
-Analisis menunjukkan bahwa suhu merupakan faktor utama yang memengaruhi jumlah penyewaan sepeda, 
-dengan hubungan positif yang kuat. Kelembaban memiliki pengaruh negatif namun relatif lemah. 
-Selain itu, terdapat pola musiman yang konsisten serta tren peningkatan dari tahun ke tahun. 
-Perbedaan antara hari kerja dan hari libur tidak signifikan, sedangkan musim memiliki pengaruh yang cukup jelas terhadap variasi penyewaan.
-""")
+<div class="insight-box">
+<b>Kesimpulan:</b><br><br>
+
+Suhu merupakan faktor utama yang memengaruhi jumlah penyewaan sepeda, dengan hubungan positif yang cukup kuat, 
+sementara kelembaban hanya memiliki pengaruh negatif yang lemah.<br><br>
+
+Tren penyewaan menunjukkan pola musiman yang konsisten, di mana permintaan meningkat pada pertengahan tahun 
+(Summer–Fall) dan menurun di awal serta akhir tahun, serta terjadi peningkatan penggunaan pada tahun 2012 dibandingkan 2011.<br><br>
+
+Perbedaan penyewaan antara hari kerja dan hari libur tidak signifikan, sehingga variasi permintaan lebih dipengaruhi 
+oleh faktor musim dan kondisi cuaca dibandingkan tipe hari.
+</div>
+""", unsafe_allow_html=True)
+
 
 # =====================================================
 # REKOMENDASI
 # =====================================================
-st.subheader("8. Rekomendasi")
+st.subheader("Rekomendasi")
 
 st.markdown("""
-1. Tingkatkan ketersediaan sepeda saat suhu tinggi  
-2. Fokus pada musim dengan permintaan tinggi  
-3. Lakukan promosi pada musim rendah  
-4. Gunakan suhu sebagai indikator prediksi  
-5. Pertahankan operasional stabil sepanjang minggu  
-6. Kembangkan layanan seiring peningkatan tren  
-""")
+<div class="insight-box">
+<b>Rekomendasi:</b><br><br>
+
+1. Optimalkan ketersediaan sepeda pada periode <b>high demand</b> (Summer–Fall dan suhu tinggi)  
+2. Tingkatkan permintaan melalui <b>promosi atau insentif</b> pada musim rendah (Spring & Winter)  
+3. Gunakan <b>suhu sebagai indikator utama</b> dalam perencanaan operasional dan alokasi armada  
+4. Pertahankan distribusi sepeda yang <b>stabil sepanjang minggu</b> karena tipe hari tidak berpengaruh signifikan  
+</div>
+""", unsafe_allow_html=True)
