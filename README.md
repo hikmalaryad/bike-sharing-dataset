@@ -18,7 +18,7 @@ Hasil analisis divisualisasikan dalam bentuk **dashboard interaktif menggunakan 
 
 * **Nama:** Hikmal Arya Dwitama
 * **Email:** [cdcc200d6y1003@student.devacademy.id](mailto:cdcc200d6y1003@student.devacademy.id)
-* **ID Dicoding:** CDC C200D6Y1003
+* **ID Dicoding:** CDCC200D6Y1003
 
 ---
 
@@ -53,7 +53,7 @@ Hasil analisis divisualisasikan dalam bentuk **dashboard interaktif menggunakan 
 
 ## 📁 Struktur Direktori
 
-```bash
+```
 submission/
 ├── dashboard/
 │   ├── dashboard.py
@@ -79,9 +79,27 @@ cd bike-sharing-dataset
 
 ---
 
-### 2. Install Library
+### 2. Setup Virtual Environment
+
+#### (a) Menggunakan Anaconda
 
 ```bash
+conda create --name bike-ds python=3.9
+conda activate bike-ds
+pip install -r requirements.txt
+```
+
+#### (b) Menggunakan venv
+
+```bash
+python -m venv venv
+
+# Mac/Linux
+source venv/bin/activate  
+
+# Windows
+venv\Scripts\activate  
+
 pip install -r requirements.txt
 ```
 
@@ -93,28 +111,17 @@ pip install -r requirements.txt
 streamlit run dashboard/dashboard.py
 ```
 
-atau
-
-```bash
-python -m streamlit run dashboard/dashboard.py
-```
-
 Aplikasi akan berjalan di:
 http://localhost:8501
-
----
-
-## 🌐 Live Dashboard
-
-👉 https://hikmalaryad-bike-sharing-dataset.streamlit.app
 
 ---
 
 ## 📌 Insight
 
 * Suhu memiliki hubungan positif terhadap jumlah penyewaan sepeda
-* Kelembaban tinggi cenderung menurunkan jumlah penyewaan
-* Penyewaan meningkat pada musim tertentu
+* Kelembaban memiliki pengaruh negatif namun relatif lemah
+* Penyewaan meningkat pada musim tertentu (Summer & Fall)
+* Tidak terdapat perbedaan signifikan antara hari kerja dan hari libur
 
 ---
 
