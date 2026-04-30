@@ -33,11 +33,17 @@ Proyek ini bertujuan untuk menganalisis pola penggunaan sepeda berdasarkan datas
 ---
 
 ## 🚀 Cara Menjalankan Dashboard
+pip install -r requirements.txt
+streamlit run dashboard/dashboard.py
 
-```bash
-cd dashboard
-streamlit run dashboard.py
-```
+Aplikasi akan berjalan di:
+http://localhost:8501
+
+---
+
+🌐 Live Dashboard
+
+👉 https://hikmalaryad-bike-sharing-dataset.streamlit.app
 
 ---
 
