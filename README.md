@@ -1,8 +1,18 @@
-# 🚲 Bike Sharing Data Analysis
+# 🚲 Bike Sharing Data Analysis Dashboard
 
 ## 📌 Deskripsi Proyek
 
-Proyek ini bertujuan untuk menganalisis pola penggunaan sepeda berdasarkan dataset Bike Sharing.
+Proyek ini bertujuan untuk menganalisis pola penggunaan sepeda menggunakan **Bike Sharing Dataset (2011–2012)**.
+
+Analisis dilakukan untuk memahami:
+
+* Pengaruh kondisi cuaca terhadap jumlah penyewaan sepeda
+* Pola musiman penggunaan sepeda
+* Tren penyewaan dari waktu ke waktu
+
+Hasil analisis divisualisasikan dalam bentuk **dashboard interaktif menggunakan Streamlit**.
+
+---
 
 ## 👤 Informasi
 
@@ -22,6 +32,15 @@ Proyek ini bertujuan untuk menganalisis pola penggunaan sepeda berdasarkan datas
 
 ---
 
+## 🎯 Tujuan Analisis
+
+* Mengidentifikasi pola penggunaan sepeda
+* Menganalisis pengaruh cuaca terhadap penyewaan
+* Mengetahui musim dengan permintaan tertinggi dan terendah
+* Menganalisis tren penyewaan dari waktu ke waktu
+
+---
+
 ## 🛠️ Tools & Library
 
 * Python
@@ -32,35 +51,70 @@ Proyek ini bertujuan untuk menganalisis pola penggunaan sepeda berdasarkan datas
 
 ---
 
-## 🚀 Cara Menjalankan Dashboard
+## 📁 Struktur Direktori
+
+```bash
+submission/
+├── dashboard/
+│   ├── dashboard.py
+│   └── main_data.csv
+├── data/
+│   └── day.csv
+├── notebook.ipynb
+├── README.md
+├── requirements.txt
+├── url.txt
+```
+
+---
+
+## 🚀 Panduan Menjalankan Aplikasi
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/hikmalaryad/bike-sharing-dataset.git
+cd bike-sharing-dataset
+```
+
+---
+
+### 2. Install Library
+
+```bash
 pip install -r requirements.txt
+```
+
+---
+
+### 3. Menjalankan Dashboard
+
+```bash
 streamlit run dashboard/dashboard.py
+```
+
+atau
+
+```bash
+python -m streamlit run dashboard/dashboard.py
+```
 
 Aplikasi akan berjalan di:
 http://localhost:8501
 
 ---
 
-🌐 Live Dashboard
+## 🌐 Live Dashboard
 
 👉 https://hikmalaryad-bike-sharing-dataset.streamlit.app
 
 ---
 
-## 📁 Struktur Folder
-
-* `dashboard/` → dashboard streamlit
-* `data/` → dataset
-* `notebook.ipynb` → analisis data
-* `requirements.txt` → dependencies
-
----
-
 ## 📌 Insight
 
-* Suhu berpengaruh positif terhadap jumlah penyewaan
+* Suhu memiliki hubungan positif terhadap jumlah penyewaan sepeda
 * Kelembaban tinggi cenderung menurunkan jumlah penyewaan
-* Tren meningkat pada musim tertentu
+* Penyewaan meningkat pada musim tertentu
 
 ---
 
