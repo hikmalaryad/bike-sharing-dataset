@@ -81,38 +81,27 @@ def load_data():
 
     df = pd.read_csv(file_path)
 
-    # tanggal aman
     df["dteday"] = pd.to_datetime(df["dteday"], errors="coerce")
-
-    # drop tanggal rusak
     df = df.dropna(subset=["dteday"])
 
-    # fitur waktu
     df["year"] = df["dteday"].dt.year
     df["month"] = df["dteday"].dt.month
 
-    # ================= FIX SEASON =================
-    if df["season"].dtype != "object":
-        df["season"] = df["season"].map({
-            1: "Spring",
-            2: "Summer",
-            3: "Fall",
-            4: "Winter"
-        })
+    # FIX SEASON
+    df["season"] = df["season"].map({
+        1: "Spring",
+        2: "Summer",
+        3: "Fall",
+        4: "Winter"
+    }).fillna(df["season"])
 
-    # ================= FIX WORKINGDAY =================
-    if df["workingday"].dtype != "object":
-        df["workingday_label"] = df["workingday"].map({
-            0: "Holiday",
-            1: "Working Day"
-        })
-    else:
-        df["workingday_label"] = df["workingday"]
+    # FIX WORKINGDAY
+    df["workingday_label"] = df["workingday"].map({
+        0: "Holiday",
+        1: "Working Day"
+    }).fillna(df["workingday"])
 
-    # ================= DROP NULL =================
-    df = df.dropna(subset=["season", "workingday_label"])
-
-    # ================= TEMP CATEGORY =================
+    # TEMP CATEGORY
     df["temp_category"] = pd.cut(
         df["temp"],
         bins=[0, 0.33, 0.66, 1.0],
@@ -122,19 +111,6 @@ def load_data():
     return df
 
 df = load_data()
-
-# ================= FIX FILTER WAJIB =================
-
-# buang data yang gagal mapping
-df = df.dropna(subset=["season", "workingday_label"])
-
-# ================= CLEAN DATA =================
-
-# convert tanggal aman
-df["dteday"] = pd.to_datetime(df["dteday"], errors="coerce")
-
-# buang tanggal rusak
-df = df.dropna(subset=["dteday"])
 
 # ================= FILTER =================
 st.sidebar.markdown("## 📊 Filter Data")
@@ -206,9 +182,6 @@ Insight utama: suhu paling berpengaruh terhadap permintaan.
 if df_filtered.empty:
     st.warning("Filter terlalu sempit, menampilkan semua data.")
     df_filtered = df.copy()
-
-# ================= INFO JUMLAH DATA =================
-st.caption(f"Jumlah data ditampilkan: {len(df_filtered)} baris")
 
 # ================= HEADER =================
 st.title("🚲 Dashboard Bike Sharing")
