@@ -1,5 +1,13 @@
 # 🚲 Bike Sharing Data Analysis Dashboard
 
+## 🌐 Dashboard Deployment
+
+Dashboard dapat diakses melalui:
+
+**https://hikmalaryad-bike-sharing-dataset.streamlit.app/**
+
+---
+
 ## 📌 Deskripsi Proyek
 
 Proyek ini bertujuan untuk menganalisis pola penggunaan sepeda menggunakan **Bike Sharing Dataset (2011–2012)**.
@@ -53,7 +61,7 @@ Hasil analisis divisualisasikan dalam bentuk **dashboard interaktif menggunakan 
 
 ## 📁 Struktur Direktori
 
-```
+```text
 submission/
 ├── dashboard/
 │   ├── dashboard.py
@@ -77,8 +85,6 @@ git clone https://github.com/hikmalaryad/bike-sharing-dataset.git
 cd bike-sharing-dataset
 ```
 
----
-
 ### 2. Setup Virtual Environment
 
 #### (a) Menggunakan Anaconda
@@ -95,24 +101,25 @@ pip install -r requirements.txt
 python -m venv venv
 
 # Mac/Linux
-source venv/bin/activate  
+source venv/bin/activate
 
 # Windows
-venv\Scripts\activate  
+venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
----
-
 ### 3. Menjalankan Dashboard
 
 ```bash
-streamlit run dashboard/dashboard.py
+python -m streamlit run dashboard/dashboard.py
 ```
 
 Aplikasi akan berjalan di:
+
+```text
 http://localhost:8501
+```
 
 ---
 
