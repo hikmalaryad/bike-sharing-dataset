@@ -112,7 +112,7 @@ def load_data():
 
 df = load_data()
 
-# ================= FILTER =================
+#   FILTER  
 st.sidebar.markdown("## 📊 Filter Data")
 
 # Tahun (WAJIB ADA)
@@ -136,7 +136,7 @@ selected_workingday = st.sidebar.multiselect(
     default=[x for x in sorted(df["workingday_label"].unique()) if pd.notna(x)]
 )
 
-# ================= DATE =================
+#   DATE  
 if df.empty:
     st.error("Data kosong setelah cleaning")
     st.stop()
@@ -149,7 +149,7 @@ date_range = st.sidebar.date_input(
     value=(min_date.date(), max_date.date())
 )
 
-# ================= APPLY FILTER =================
+#   APPLY FILTER  
 df_filtered = df[
     (df["year"].isin(selected_year)) &
     (df["season"].isin(selected_season)) &
@@ -164,7 +164,7 @@ if len(date_range) == 2:
         (df_filtered["dteday"] <= end)
     ]
 
-# ================= INFO SIDEBAR =================
+#   INFO SIDEBAR  
 st.sidebar.info("""
 Dashboard ini menganalisis penyewaan sepeda
 
@@ -178,18 +178,18 @@ Fokus:
 Insight utama: suhu paling berpengaruh terhadap permintaan.
 """)
 
-# ================= VALIDASI DATA =================
+#   VALIDASI DATA  
 if df_filtered.empty:
     st.warning("Filter terlalu sempit, menampilkan semua data.")
     df_filtered = df.copy()
 
-# ================= HEADER =================
+#   HEADER  
 st.title("🚲 Dashboard Bike Sharing")
 st.markdown("Analisis faktor yang memengaruhi penyewaan sepeda (2011–2012).")
 
 st.success("Insight utama: suhu merupakan faktor paling dominan dalam meningkatkan penyewaan sepeda.")
 
-# ================= METRICS =================
+#   METRICS  
 col1, col2, col3, col4 = st.columns(4)
 
 mean_val = df_filtered["cnt"].mean()
@@ -224,9 +224,7 @@ Namun, terdapat lonjakan pada kondisi tertentu yang menunjukkan bahwa permintaan
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
-# =====================================================
 # 1. SUHU + KELEMBABAN
-# =====================================================
 st.markdown("## 🎯 Pertanyaan 1: Pengaruh Suhu & Kelembaban")
 
 col1, col2 = st.columns(2)
@@ -255,9 +253,7 @@ bukan faktor penentu utama.
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
-# =====================================================
 # 2. TREND
-# =====================================================
 st.markdown("## 🎯 Pertanyaan 2: Tren Penyewaan Sepeda")
 
 monthly = df_filtered.set_index("dteday").resample("ME")["cnt"].mean()
@@ -282,9 +278,7 @@ mengindikasikan growth demand secara keseluruhan.
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
-# =====================================================
 # 3. WORKINGDAY + SEASON
-# =====================================================
 st.markdown("## 🎯 Pertanyaan 3: Perbandingan Hari & Musim")
 
 col1, col2 = st.columns(2)
@@ -315,16 +309,12 @@ terendah pada Spring, menunjukkan adanya efek seasonality yang kuat.
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
-# =====================================================
 # ANALISIS LANJUTAN
-# =====================================================
 st.subheader("Analisis Lanjutan")
 
 tab1, tab2, tab3 = st.tabs(["Tren Tahunan", "Kategori Suhu", "Uji Statistik"])
 
-# ======================
 # TAB 1: TREND TAHUNAN
-# ======================
 with tab1:
     monthly_year = df_filtered.groupby(["year", "month"])["cnt"].mean().reset_index()
 
@@ -346,9 +336,7 @@ menunjukkan adanya <b>seasonality yang stabil</b>.
 </div>
 """, unsafe_allow_html=True)
 
-# ======================
 # TAB 2: KATEGORI SUHU
-# ======================
 with tab2:
     fig, ax = plt.subplots()
     sns.barplot(x="temp_category", y="cnt", data=df_filtered, ax=ax)
@@ -365,9 +353,7 @@ bahwa suhu merupakan <b>key driver</b> dalam meningkatkan demand penyewaan seped
 </div>
 """, unsafe_allow_html=True)
 
-# ======================
 # TAB 3: UJI STATISTIK
-# ======================
 with tab3:
     working = df_filtered[df_filtered["workingday_label"] == "Working Day"]["cnt"]
     holiday = df_filtered[df_filtered["workingday_label"] == "Holiday"]["cnt"]
@@ -395,9 +381,7 @@ with tab3:
 
 st.markdown("<hr style='margin:10px 0'>", unsafe_allow_html=True)
 
-# =====================================================
 # KESIMPULAN
-# =====================================================
 st.subheader("Kesimpulan")
 
 st.markdown("""
@@ -416,9 +400,7 @@ oleh faktor musim dan kondisi cuaca dibandingkan tipe hari.
 """, unsafe_allow_html=True)
 
 
-# =====================================================
 # REKOMENDASI
-# =====================================================
 st.subheader("Rekomendasi")
 
 st.markdown("""
